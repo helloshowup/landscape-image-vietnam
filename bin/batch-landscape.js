@@ -12,9 +12,40 @@ if (!originalsDir || !jsonDir || !maskPath || !outDir) {
   process.exit(1);
 }
 
-if (!fs.existsSync(outDir)) {
-  fs.mkdirSync(outDir, { recursive: true });
+function ensureDir(name, dir) {
+  if (!fs.existsSync(dir)) {
+    console.error(`Missing ${name}: ${dir}`);
+    process.exit(1);
+  }
+  if (!fs.statSync(dir).isDirectory()) {
+    console.error(`${name} is not a directory: ${dir}`);
+    process.exit(1);
+  }
 }
+
+function ensureFile(name, file) {
+  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+    console.error(`Missing ${name}: ${file}`);
+    process.exit(1);
+  }
+}
+
+ensureDir('originalsDir', originalsDir);
+ensureDir('jsonDir', jsonDir);
+ensureFile('maskPath', maskPath);
+
+if (!fs.existsSync(outDir)) {
+  try {
+    fs.mkdirSync(outDir, { recursive: true });
+  } catch (err) {
+    console.error(`Failed to create output directory ${outDir}: ${err.message}`);
+    process.exit(1);
+  }
+} else if (!fs.statSync(outDir).isDirectory()) {
+  console.error(`output directory path is not a directory: ${outDir}`);
+  process.exit(1);
+}
+
 
 const summaries = loadAllSummaries(jsonDir);
 const images = fs.readdirSync(originalsDir).filter(f => /\.(png|jpg|jpeg)$/i.test(f));
