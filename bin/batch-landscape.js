@@ -5,10 +5,10 @@ import { loadAllSummaries } from '../lib/loadJsonSummaries.js';
 import { getPromptForImage } from '../lib/matchImageToSummary.js';
 import { editImage } from '../lib/editImage.js';
 
-const [,, originalsDir, jsonDir, maskPath, outDir] = process.argv;
+const [,, originalsDir, promptsDir, maskPath, outDir] = process.argv;
 
-if (!originalsDir || !jsonDir || !maskPath || !outDir) {
-  console.error('Usage: batch-landscape <originalsDir> <jsonDir> <mask.png> <outputDir>');
+if (!originalsDir || !promptsDir || !maskPath || !outDir) {
+  console.error('Usage: batch-landscape <originalsDir> <promptsDir> <mask.png> <outputDir>');
   process.exit(1);
 }
 
@@ -48,6 +48,7 @@ if (!fs.existsSync(outDir)) {
 
 
 const summaries = loadAllSummaries(jsonDir);
+
 const images = fs.readdirSync(originalsDir).filter(f => /\.(png|jpg|jpeg)$/i.test(f));
 
 (async () => {
