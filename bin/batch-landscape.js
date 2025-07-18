@@ -10,21 +10,50 @@ const program = new Command();
 program
   .name('batch-landscape')
   .argument('<originalsDir>')
-  .argument('<jsonDir>')
+  .argument('<promptsDir>')
   .argument('<mask>')
   .argument('<outputDir>')
   .option('-s, --size <size>', 'image size', '1536x1024')
   .showHelpAfterError();
 
 program.parse(process.argv);
-const [originalsDir, jsonDir, maskPath, outDir] = program.args;
+const [originalsDir, promptsDir, maskPath, outDir] = program.args;
 const options = program.opts();
 
-if (!fs.existsSync(outDir)) {
-  fs.mkdirSync(outDir, { recursive: true });
+function ensureDir(name, dir) {
+  if (!fs.existsSync(dir)) {
+    console.error(`Missing ${name}: ${dir}`);
+    process.exit(1);
+  }
+  if (!fs.statSync(dir).isDirectory()) {
+    console.error(`${name} is not a directory: ${dir}`);
+    process.exit(1);
+  }
 }
 
-const summaries = loadAllSummaries(jsonDir);
+function ensureFile(name, file) {
+  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+    console.error(`Missing ${name}: ${file}`);
+    process.exit(1);
+  }
+}
+
+ensureDir('originalsDir', originalsDir);
+ensureDir('promptsDir', promptsDir);
+ensureFile('maskPath', maskPath);
+if (!fs.existsSync(outDir)) {
+  try {
+    fs.mkdirSync(outDir, { recursive: true });
+  } catch (err) {
+    console.error(`Failed to create output directory ${outDir}: ${err.message}`);
+    process.exit(1);
+  }
+} else if (!fs.statSync(outDir).isDirectory()) {
+  console.error(`output directory path is not a directory: ${outDir}`);
+  process.exit(1);
+}
+
+const summaries = loadAllSummaries(promptsDir);
 const images = fs.readdirSync(originalsDir).filter(f => /\.(png|jpg|jpeg)$/i.test(f));
 
 (async () => {
