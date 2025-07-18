@@ -1,0 +1,19 @@
+{
+  "name": "landscape-image-vietnam",
+  "version": "1.0.0",
+  "description": "Batch convert images to landscape using OpenAI",
+  "scripts": {
+    "test": "node --test"
+  },
+  "bin": {
+    "batch-landscape": "./bin/batch-landscape.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^17.2.0",
+    "openai": "^5.10.1"
+  }
+}
