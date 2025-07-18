@@ -1,22 +1,59 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
+import { Command } from 'commander';
 import { loadAllSummaries } from '../lib/loadJsonSummaries.js';
 import { getPromptForImage } from '../lib/matchImageToSummary.js';
 import { editImage } from '../lib/editImage.js';
 
-const [,, originalsDir, jsonDir, maskPath, outDir] = process.argv;
+const program = new Command();
+program
+  .name('batch-landscape')
+  .argument('<originalsDir>')
+  .argument('<promptsDir>')
+  .argument('<mask>')
+  .argument('<outputDir>')
+  .option('-s, --size <size>', 'image size', '1536x1024')
+  .showHelpAfterError();
 
-if (!originalsDir || !jsonDir || !maskPath || !outDir) {
-  console.error('Usage: batch-landscape <originalsDir> <jsonDir> <mask.png> <outputDir>');
+program.parse(process.argv);
+const [originalsDir, promptsDir, maskPath, outDir] = program.args;
+const options = program.opts();
+
+function ensureDir(name, dir) {
+  if (!fs.existsSync(dir)) {
+    console.error(`Missing ${name}: ${dir}`);
+    process.exit(1);
+  }
+  if (!fs.statSync(dir).isDirectory()) {
+    console.error(`${name} is not a directory: ${dir}`);
+    process.exit(1);
+  }
+}
+
+function ensureFile(name, file) {
+  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+    console.error(`Missing ${name}: ${file}`);
+    process.exit(1);
+  }
+}
+
+ensureDir('originalsDir', originalsDir);
+ensureDir('promptsDir', promptsDir);
+ensureFile('maskPath', maskPath);
+if (!fs.existsSync(outDir)) {
+  try {
+    fs.mkdirSync(outDir, { recursive: true });
+  } catch (err) {
+    console.error(`Failed to create output directory ${outDir}: ${err.message}`);
+    process.exit(1);
+  }
+} else if (!fs.statSync(outDir).isDirectory()) {
+  console.error(`output directory path is not a directory: ${outDir}`);
   process.exit(1);
 }
 
-if (!fs.existsSync(outDir)) {
-  fs.mkdirSync(outDir, { recursive: true });
-}
-
-const summaries = loadAllSummaries(jsonDir);
+const summaries = loadAllSummaries(promptsDir);
 const images = fs.readdirSync(originalsDir).filter(f => /\.(png|jpg|jpeg)$/i.test(f));
 
 (async () => {
@@ -26,7 +63,7 @@ const images = fs.readdirSync(originalsDir).filter(f => /\.(png|jpg|jpeg)$/i.tes
     try {
       const prompt = getPromptForImage(img, summaries);
       console.log(`→ Processing ${img} with prompt: ${prompt.slice(0, 80)}...`);
-      await editImage({ imagePath, maskPath, prompt, outPath });
+      await editImage({ imagePath, maskPath, prompt, outPath, size: options.size });
       console.log(`✓ Saved landscape version to: ${outPath}`);
     } catch (e) {
       console.error(`✗ Skipped ${img}:`, e.message);
